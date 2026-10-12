@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>621. Task Scheduler — Algorithm Visualizer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182235;
+      --muted: #617087;
+      --line: #dce4ee;
+      --paper: #ffffff;
+      --canvas: #f3f6fb;
+      --blue: #315ee8;
+      --blue-soft: #eaf0ff;
+      --purple: #7546c8;
+      --purple-soft: #f1eaff;
+      --green: #16845b;
+      --green-soft: #e7f7ef;
+      --orange: #bd641b;
+      --orange-soft: #fff2e3;
+      --red: #b14343;
+      --shadow: 0 14px 40px rgba(25, 43, 72, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 36px auto 64px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 34px 38px;
+      border-radius: 24px;
+      background: #172541;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -110px;
+      right: -35px;
+      width: 330px;
+      height: 330px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 50%;
+      box-shadow: 0 0 0 38px rgba(255,255,255,.035), 0 0 0 78px rgba(255,255,255,.025);
+      content: "";
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #aebff4;
+      font-size: .78rem;
+      font-weight: 750;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3rem);
+      letter-spacing: -.045em;
+      line-height: 1.08;
+    }
+
+    .hero p:last-child {
+      position: relative;
+      z-index: 1;
+      max-width: 650px;
+      margin: 14px 0 0;
+      color: #d2dbed;
+      font-size: 1rem;
+    }
+
+    .panel {
+      margin-top: 20px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(230px, 1fr) 160px auto;
+      align-items: end;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: #43516a;
+      font-size: .83rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 12px;
+      border: 1px solid #cbd5e3;
+      border-radius: 10px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+
+    input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #315ee81c; }
+
+    .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    button {
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: #26344c;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+
+    button:hover:not(:disabled) { transform: translateY(-1px); border-color: #9eafd0; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    .primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+    .primary:hover:not(:disabled) { border-color: #244bd0; background: #244bd0; }
+    .play { border-color: #d5c5f6; background: var(--purple-soft); color: #5b31a2; }
+
+    .hint {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .error {
+      min-height: 1.4em;
+      margin: 5px 0 0;
+      color: var(--red);
+      font-size: .88rem;
+      font-weight: 650;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 16px;
+    }
+
+    h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
+
+    .step-count {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #edf1f7;
+      color: #4d5d75;
+      font-size: .8rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .status {
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 13px 15px;
+      border: 1px solid #d9e3fc;
+      border-radius: 12px;
+      background: #f5f8ff;
+    }
+
+    .status-icon {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 850;
+    }
+
+    .status p { margin: 0; }
+    .status strong { display: block; font-size: .94rem; }
+    .status span { color: var(--muted); font-size: .86rem; }
+
+    .viz-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .viz-card {
+      min-width: 0;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .viz-card h3 { margin: 0 0 4px; font-size: .95rem; }
+    .subtle { margin: 0 0 14px; color: var(--muted); font-size: .8rem; }
+    .queue-items { display: flex; min-height: 50px; flex-wrap: wrap; align-items: center; gap: 9px; }
+
+    .heap-item, .wait-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border: 1px solid #d9e2f5;
+      border-radius: 10px;
+      background: var(--blue-soft);
+      color: #2447ad;
+      font-weight: 750;
+    }
+
+    .heap-item small, .wait-item small { color: #566782; font-size: .76rem; font-weight: 650; }
+    .wait-item { border-color: #e4d6fa; background: var(--purple-soft); color: #6038a4; }
+    .empty { color: #8390a3; font-size: .84rem; font-style: italic; }
+
+    .timeline-wrap { overflow-x: auto; padding: 3px 1px 8px; }
+    .timeline { display: flex; min-width: max-content; gap: 7px; }
+    .slot {
+      display: grid;
+      width: 64px;
+      min-height: 74px;
+      align-content: center;
+      justify-items: center;
+      gap: 2px;
+      border: 1px solid #ccd7e6;
+      border-radius: 11px;
+      background: #f7f9fc;
+    }
+
+    .slot strong { font-size: 1.18rem; }
+    .slot small { color: #67768d; font-size: .7rem; }
+    .slot.task { border-color: #bdd0ff; background: var(--blue-soft); color: #2549b7; }
+    .slot.idle { border-style: dashed; border-color: #efc991; background: var(--orange-soft); color: var(--orange); }
+    .slot.future { border-style: dashed; color: #a0aabc; background: #fbfcfe; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .79rem;
+    }
+
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 11px; height: 11px; border-radius: 3px; background: var(--blue-soft); border: 1px solid #bdd0ff; }
+    .swatch.idle { background: var(--orange-soft); border-color: #efc991; }
+
+    .formula {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .formula > div {
+      padding: 13px 14px;
+      border-radius: 12px;
+      background: #f5f7fb;
+    }
+
+    .formula b { display: block; margin-bottom: 3px; font-size: .83rem; }
+    .formula span { color: var(--muted); font-size: .81rem; }
+    code { padding: 2px 5px; border-radius: 5px; background: #e9edf4; color: #37445b; font: .88em ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+    .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .notes h3 { margin: 0 0 7px; font-size: .98rem; }
+    .notes p, .notes li { color: #526178; font-size: .88rem; }
+    .notes p { margin: 0; }
+    .notes ul { margin: 7px 0 0; padding-left: 19px; }
+    .notes li + li { margin-top: 5px; }
+    .complexity {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 6px 9px;
+      border-radius: 8px;
+      background: var(--green-soft);
+      color: #126543;
+      font-size: .83rem;
+      font-weight: 750;
+    }
+
+    @media (max-width: 760px) {
+      .page { width: min(100% - 20px, 620px); margin-top: 12px; }
+      .hero { padding: 28px 24px; border-radius: 18px; }
+      .panel { padding: 18px; }
+      .controls { grid-template-columns: 1fr 120px; }
+      .controls .button-row { grid-column: 1 / -1; }
+      .viz-grid, .notes { grid-template-columns: 1fr; }
+      .formula { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 420px) {
+      .controls { grid-template-columns: 1fr; }
+      .controls .button-row { grid-column: auto; }
+      .button-row button { flex: 1; padding-inline: 9px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">LeetCode 621 · Greedy + Max Heap</p>
+      <h1>Task Scheduler</h1>
+      <p>Schedule every task with at least <em>n</em> intervals between two executions of the same task. Step through the heap and cooldown queue to see why the greedy choice works.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="input-title">
+      <div class="section-heading">
+        <h2 id="input-title">Choose an input</h2>
+        <span class="step-count" id="total-badge">6 tasks</span>
+      </div>
+      <div class="controls">
+        <div>
+          <label for="tasks-input">Tasks (comma-separated)</label>
+          <input id="tasks-input" value="A, A, A, B, B, B" autocomplete="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="cooldown-input">Cooldown n</label>
+          <input id="cooldown-input" type="number" min="0" max="100" value="2">
+        </div>
+        <div class="button-row">
+          <button class="primary" id="build-button">Build schedule</button>
+          <button id="prev-button" aria-label="Previous step">← Back</button>
+          <button id="next-button" aria-label="Next step">Next →</button>
+          <button class="play" id="play-button">▶ Play</button>
+        </div>
+      </div>
+      <p class="hint">Example: <code>A, A, A, B, B, B</code> · Try <code>n = 2</code> or <code>n = 3</code>. Use commas to separate task labels.</p>
+      <p class="error" id="error-message" role="alert"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="step-title">
+      <div class="section-heading">
+        <h2 id="step-title">Walk through the algorithm</h2>
+        <span class="step-count" id="step-badge">Step 0 of 0</span>
+      </div>
+      <div class="status" aria-live="polite">
+        <div class="status-icon" id="status-icon">↗</div>
+        <p><strong id="status-title">Ready to schedule</strong><span id="status-detail">Build a schedule, then press Next or Play.</span></p>
+      </div>
+
+      <div class="viz-grid">
+        <article class="viz-card">
+          <h3>Max-heap · ready tasks</h3>
+          <p class="subtle">The task with the most remaining copies is chosen first.</p>
+          <div class="queue-items" id="heap-view"></div>
+        </article>
+        <article class="viz-card">
+          <h3>Cooldown queue · waiting tasks</h3>
+          <p class="subtle">FIFO order; each task shows when it becomes available again.</p>
+          <div class="queue-items" id="waiting-view"></div>
+        </article>
+      </div>
+
+      <article class="viz-card" style="margin-top:14px">
+        <div class="section-heading">
+          <h3>Timeline</h3>
+          <span class="step-count" id="result-badge">Result: —</span>
+        </div>
+        <div class="timeline-wrap"><div class="timeline" id="timeline-view"></div></div>
+        <div class="legend">
+          <span><i class="swatch"></i> Executed task</span>
+          <span><i class="swatch idle"></i> Idle interval</span>
+        </div>
+      </article>
+
+      <div class="formula">
+        <div><b>Heap priority</b><span>Python stores counts as negatives: <code>-count</code> makes <code>heapq</code> act like a max-heap.</span></div>
+        <div><b>Cooldown release time</b><span>Run at time <code>t</code> → task is ready at <code>t + n + 1</code>.</span></div>
+        <div><b>Greedy rule</b><span>Among available tasks, use the most frequent one to avoid leaving it for later.</span></div>
+      </div>
+    </section>
+
+    <section class="panel notes" aria-label="Algorithm notes">
+      <div>
+        <h3>How the code works</h3>
+        <ul>
+          <li>Count each task, then put all negative frequencies in a heap.</li>
+          <li>At each time, release tasks whose cooldown has finished.</li>
+          <li>Run the available task with the highest remaining frequency.</li>
+          <li>If no task is ready, jump to the next release time; those skipped slots are idle.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Why the waiting queue is FIFO</h3>
+        <p>Every task run at time <code>t</code> gets the same cooldown length, so tasks enter the queue in release-time order. The queue's front is therefore the next task that can return to the heap.</p>
+        <span class="complexity">Time: O(T log K) · Space: O(K)</span>
+        <p style="margin-top:7px"><small>T = total intervals in the schedule; K = distinct task types.</small></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const tasksInput = document.getElementById("tasks-input");
+    const cooldownInput = document.getElementById("cooldown-input");
+    const heapView = document.getElementById("heap-view");
+    const waitingView = document.getElementById("waiting-view");
+    const timelineView = document.getElementById("timeline-view");
+    const statusTitle = document.getElementById("status-title");
+    const statusDetail = document.getElementById("status-detail");
+    const statusIcon = document.getElementById("status-icon");
+    const stepBadge = document.getElementById("step-badge");
+    const totalBadge = document.getElementById("total-badge");
+    const resultBadge = document.getElementById("result-badge");
+    const errorMessage = document.getElementById("error-message");
+    const prevButton = document.getElementById("prev-button");
+    const nextButton = document.getElementById("next-button");
+    const playButton = document.getElementById("play-button");
+
+    let history = [];
+    let currentStep = 0;
+    let timer = null;
+    let finalTime = 0;
+
+    function parseTasks(text) {
+      return text.split(",").map(task => task.trim()).filter(Boolean);
+    }
+
+    function buildHistory(tasks, cooldown) {
+      const counts = new Map();
+      for (const task of tasks) counts.set(task, (counts.get(task) || 0) + 1);
+
+      let heap = [...counts.entries()].map(([task, count]) => ({ task, remaining: count }));
+      const waiting = [];
+      const events = [];
+      const timeline = [];
+      let time = 0;
+
+      const sortHeap = () => heap.sort((a, b) =>
+        b.remaining - a.remaining || a.task.localeCompare(b.task));
+
+      sortHeap();
+      events.push({
+        time: 0, task: null, idle: [], heap: heap.map(item => ({ ...item })),
+        waiting: [], timeline: [], title: "Initial task counts",
+        detail: "The heap starts with each task type, ordered by its remaining frequency."
+      });
+
+      while (heap.length || waiting.length) {
+        time += 1;
+        const nextAttempt = time;
+        const idle = [];
+
+        if (!heap.length && waiting.length) {
+          time = waiting[0].readyAt;
+          for (let slot = nextAttempt; slot < time; slot++) {
+            idle.push(slot);
+            timeline.push({ time: slot, task: null });
+          }
+        }
+
+        const released = [];
+        while (waiting.length && waiting[0].readyAt <= time) {
+          const entry = waiting.shift();
+          heap.push({ task: entry.task, remaining: entry.remaining });
+          released.push(entry.task);
+        }
+        sortHeap();
+
+        let executed = null;
+        let detail;
+        if (heap.length) {
+          const top = heap.shift();
+          executed = top.task;
+          timeline.push({ time, task: executed });
+          top.remaining -= 1;
+          if (top.remaining > 0) {
+            waiting.push({
+              task: top.task,
+              remaining: top.remaining,
+              readyAt: time + cooldown + 1
+            });
+          }
+          detail = `Ran ${executed} at time ${time}. It has ${top.remaining} ${top.remaining === 1 ? "copy" : "copies"} remaining${top.remaining > 0 ? ` and returns at time ${time + cooldown + 1}` : ""}.`;
+          if (released.length) detail = `${released.join(", ")} ${released.length === 1 ? "was" : "were"} released from cooldown. ${detail}`;
+        } else {
+          detail = "No task is ready at this interval.";
+        }
+
+        events.push({
+          time, task: executed, idle, heap: heap.map(item => ({ ...item })),
+          waiting: waiting.map(item => ({ ...item })),
+          timeline: timeline.map(item => ({ ...item })),
+          title: executed ? `Time ${time}: run ${executed}` : `Time ${time}: idle`,
+          detail
+        });
+      }
+
+      return { events, timeline, finalTime: time };
+    }
+
+    function renderQueue(container, items, kind) {
+      container.replaceChildren();
+      if (!items.length) {
+        const empty = document.createElement("span");
+        empty.className = "empty";
+        empty.textContent = kind === "heap" ? "No tasks ready" : "No tasks cooling down";
+        container.append(empty);
+        return;
+      }
+
+      items.forEach((item, index) => {
+        const chip = document.createElement("span");
+        chip.className = kind === "heap" ? "heap-item" : "wait-item";
+        const task = document.createElement("span");
+        task.textContent = kind === "heap" ? `${index === 0 ? "★ " : ""}${item.task}` : item.task;
+        const metadata = document.createElement("small");
+        metadata.textContent = kind === "heap"
+          ? `× ${item.remaining}`
+          : `× ${item.remaining} · ready @ ${item.readyAt}`;
+        chip.append(task, metadata);
+        container.append(chip);
+      });
+    }
+
+    function render() {
+      const snapshot = history[currentStep];
+      if (!snapshot) return;
+
+      renderQueue(heapView, snapshot.heap, "heap");
+      renderQueue(waitingView, snapshot.waiting, "waiting");
+      statusTitle.textContent = snapshot.title;
+      statusDetail.textContent = snapshot.detail;
+      statusIcon.textContent = currentStep === 0 ? "↗" : snapshot.task ? snapshot.task : "Ⅱ";
+      stepBadge.textContent = `Step ${currentStep} of ${history.length - 1}`;
+      totalBadge.textContent = `${parseTasks(tasksInput.value).length} tasks`;
+      prevButton.disabled = currentStep === 0;
+      nextButton.disabled = currentStep === history.length - 1;
+      resultBadge.textContent = currentStep === history.length - 1
+        ? `Result: ${finalTime} intervals`
+        : "Result: in progress";
+
+      timelineView.replaceChildren();
+      for (const entry of snapshot.timeline) {
+        const slot = document.createElement("div");
+        slot.className = `slot ${entry.task ? "task" : "idle"}`;
+        const label = document.createElement("strong");
+        label.textContent = entry.task || "—";
+        const time = document.createElement("small");
+        time.textContent = `time ${entry.time}`;
+        slot.append(label, time);
+        timelineView.append(slot);
+      }
+
+      if (currentStep === 0) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "slot future";
+        placeholder.innerHTML = "<strong>?</strong><small>not started</small>";
+        timelineView.append(placeholder);
+      }
+    }
+
+    function stopPlayback() {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+      playButton.textContent = "▶ Play";
+    }
+
+    function createSchedule() {
+      stopPlayback();
+      errorMessage.textContent = "";
+      const tasks = parseTasks(tasksInput.value);
+      const cooldown = Number(cooldownInput.value);
+
+      if (!tasks.length) {
+        errorMessage.textContent = "Enter at least one task label, separated by commas.";
+        return;
+      }
+      if (tasks.length > 120) {
+        errorMessage.textContent = "For a readable visualization, use at most 120 task entries.";
+        return;
+      }
+      if (!Number.isInteger(cooldown) || cooldown < 0 || cooldown > 100) {
+        errorMessage.textContent = "Cooldown must be a whole number from 0 to 100.";
+        return;
+      }
+
+      const result = buildHistory(tasks, cooldown);
+      history = result.events;
+      finalTime = result.finalTime;
+      currentStep = 0;
+      render();
+    }
+
+    document.getElementById("build-button").addEventListener("click", createSchedule);
+    prevButton.addEventListener("click", () => {
+      stopPlayback();
+      currentStep = Math.max(0, currentStep - 1);
+      render();
+    });
+    nextButton.addEventListener("click", () => {
+      currentStep = Math.min(history.length - 1, currentStep + 1);
+      render();
+    });
+    playButton.addEventListener("click", () => {
+      if (timer !== null) {
+        stopPlayback();
+        return;
+      }
+      if (currentStep === history.length - 1) currentStep = 0;
+      playButton.textContent = "Ⅱ Pause";
+      render();
+      timer = setInterval(() => {
+        if (currentStep >= history.length - 1) {
+          stopPlayback();
+          return;
+        }
+        currentStep += 1;
+        render();
+        if (currentStep === history.length - 1) stopPlayback();
+      }, 850);
+    });
+    tasksInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") createSchedule();
+    });
+    cooldownInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") createSchedule();
+    });
+
+    createSchedule();
+  </script>
+</body>
+</html>

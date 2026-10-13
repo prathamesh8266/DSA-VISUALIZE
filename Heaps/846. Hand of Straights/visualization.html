@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>846. Hand of Straights — Algorithm Visualizer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182235;
+      --muted: #617087;
+      --line: #dce4ee;
+      --paper: #fff;
+      --canvas: #f3f6fb;
+      --blue: #315ee8;
+      --blue-soft: #eaf0ff;
+      --purple: #7546c8;
+      --purple-soft: #f1eaff;
+      --green: #16845b;
+      --green-soft: #e7f7ef;
+      --orange: #bd641b;
+      --orange-soft: #fff2e3;
+      --red: #b14343;
+      --red-soft: #fff0ef;
+      --shadow: 0 14px 40px rgba(25, 43, 72, .08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    button, input { font: inherit; }
+    .page { width: min(1120px, calc(100% - 32px)); margin: 36px auto 64px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 34px 38px;
+      border-radius: 24px;
+      background: #172541;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      position: absolute;
+      top: -110px;
+      right: -35px;
+      width: 330px;
+      height: 330px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 50%;
+      box-shadow: 0 0 0 38px rgba(255,255,255,.035), 0 0 0 78px rgba(255,255,255,.025);
+      content: "";
+      pointer-events: none;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #aebff4;
+      font-size: .78rem;
+      font-weight: 750;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3rem);
+      letter-spacing: -.045em;
+      line-height: 1.08;
+    }
+    .hero p:last-child {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      margin: 14px 0 0;
+      color: #d2dbed;
+      font-size: 1rem;
+    }
+    .panel {
+      margin-top: 20px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(230px, 1fr) 160px auto;
+      align-items: end;
+      gap: 14px;
+    }
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: #43516a;
+      font-size: .83rem;
+      font-weight: 700;
+    }
+    input {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 12px;
+      border: 1px solid #cbd5e3;
+      border-radius: 10px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+    input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #315ee81c; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    button {
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: #26344c;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); border-color: #9eafd0; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    .primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+    .primary:hover:not(:disabled) { border-color: #244bd0; background: #244bd0; }
+    .play { border-color: #d5c5f6; background: var(--purple-soft); color: #5b31a2; }
+    .hint { margin: 12px 0 0; color: var(--muted); font-size: .86rem; }
+    .error { min-height: 1.4em; margin: 5px 0 0; color: var(--red); font-size: .88rem; font-weight: 650; }
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 16px;
+    }
+    h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
+    h3 { margin: 0 0 4px; font-size: .95rem; }
+    .step-count {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #edf1f7;
+      color: #4d5d75;
+      font-size: .8rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .status {
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 13px 15px;
+      border: 1px solid #d9e3fc;
+      border-radius: 12px;
+      background: #f5f8ff;
+    }
+    .status.success { border-color: #c4ead6; background: #f1fbf5; }
+    .status.failure { border-color: #f0c8c5; background: #fff7f6; }
+    .status-icon {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 850;
+    }
+    .status.success .status-icon { background: var(--green-soft); color: var(--green); }
+    .status.failure .status-icon { background: var(--red-soft); color: var(--red); }
+    .status p { margin: 0; }
+    .status strong { display: block; font-size: .94rem; }
+    .status span { color: var(--muted); font-size: .86rem; }
+    .viz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+    .viz-card {
+      min-width: 0;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+    .subtle { margin: 0 0 14px; color: var(--muted); font-size: .8rem; }
+    .items { display: flex; min-height: 50px; flex-wrap: wrap; align-items: center; gap: 9px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 11px;
+      border: 1px solid #d9e2f5;
+      border-radius: 10px;
+      background: var(--blue-soft);
+      color: #2447ad;
+      font-weight: 750;
+    }
+    .chip small { color: #566782; font-size: .76rem; font-weight: 650; }
+    .chip.wait { border-color: #e4d6fa; background: var(--purple-soft); color: #6038a4; }
+    .empty { color: #8390a3; font-size: .84rem; font-style: italic; }
+    .groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 10px;
+    }
+    .group {
+      min-height: 100px;
+      padding: 12px;
+      border: 1px dashed #cbd5e3;
+      border-radius: 12px;
+      background: #fbfcfe;
+    }
+    .group.complete { border-style: solid; border-color: #b8e2cb; background: #f2fbf6; }
+    .group.current { border-style: solid; border-color: #b8caff; background: #f5f8ff; }
+    .group-label { margin-bottom: 8px; color: #627188; font-size: .76rem; font-weight: 750; }
+    .cards { display: flex; flex-wrap: wrap; gap: 6px; }
+    .card-value {
+      display: grid;
+      min-width: 31px;
+      height: 34px;
+      padding: 0 7px;
+      place-items: center;
+      border: 1px solid #cbd7ea;
+      border-radius: 8px;
+      background: #fff;
+      color: #35445c;
+      font-weight: 750;
+    }
+    .group.complete .card-value { border-color: #b8e2cb; color: #126543; }
+    .group.current .card-value { border-color: #b8caff; color: #2447ad; }
+    .card-value.rejected { border-color: #e6aaa6; background: var(--red-soft); color: var(--red); }
+    .formula { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
+    .formula > div { padding: 13px 14px; border-radius: 12px; background: #f5f7fb; }
+    .formula b { display: block; margin-bottom: 3px; font-size: .83rem; }
+    .formula span { color: var(--muted); font-size: .81rem; }
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #e9edf4;
+      color: #37445b;
+      font: .88em ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .notes h3 { margin: 0 0 7px; font-size: .98rem; }
+    .notes p, .notes li { color: #526178; font-size: .88rem; }
+    .notes p { margin: 0; }
+    .notes ul { margin: 7px 0 0; padding-left: 19px; }
+    .notes li + li { margin-top: 5px; }
+    .complexity {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 6px 9px;
+      border-radius: 8px;
+      background: var(--green-soft);
+      color: #126543;
+      font-size: .83rem;
+      font-weight: 750;
+    }
+    .back-link { display: inline-block; margin-bottom: 14px; color: #d2dbed; font-size: .88rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    @media (max-width: 760px) {
+      .page { width: min(100% - 20px, 620px); margin-top: 12px; }
+      .hero { padding: 28px 24px; border-radius: 18px; }
+      .panel { padding: 18px; }
+      .controls { grid-template-columns: 1fr 120px; }
+      .controls .button-row { grid-column: 1 / -1; }
+      .viz-grid, .notes { grid-template-columns: 1fr; }
+      .formula { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 420px) {
+      .controls { grid-template-columns: 1fr; }
+      .controls .button-row { grid-column: auto; }
+      .button-row button { flex: 1; padding-inline: 9px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <a class="back-link" href="../../../index.html">← All DSA visualizers</a>
+      <p class="eyebrow">LeetCode 846 · Min Heap + Queue</p>
+      <h1>Hand of Straights</h1>
+      <p>Can the hand be rearranged into groups of consecutive cards? Step through the min-heap, the queue of leftover copies, and each group the algorithm builds.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="input-title">
+      <div class="section-heading">
+        <h2 id="input-title">Choose an input</h2>
+        <span class="step-count" id="card-count">9 cards</span>
+      </div>
+      <div class="controls">
+        <div>
+          <label for="hand-input">Hand (comma-separated integers)</label>
+          <input id="hand-input" value="1, 2, 3, 6, 2, 3, 4, 7, 8" autocomplete="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="group-input">Group size</label>
+          <input id="group-input" type="number" min="1" max="100" value="3">
+        </div>
+        <div class="button-row">
+          <button class="primary" id="build-button">Build groups</button>
+          <button id="prev-button" aria-label="Previous step">← Back</button>
+          <button id="next-button" aria-label="Next step">Next →</button>
+          <button class="play" id="play-button">▶ Play</button>
+        </div>
+      </div>
+      <p class="hint">Try the source examples: <code>1, 2, 3, 6, 2, 3, 4, 7, 8</code> with size <code>3</code>, or <code>1, 2, 3, 4, 5</code> with size <code>4</code>.</p>
+      <p class="error" id="error-message" role="alert"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="walkthrough-title">
+      <div class="section-heading">
+        <h2 id="walkthrough-title">Walk through the algorithm</h2>
+        <span class="step-count" id="step-badge">Step 0 of 0</span>
+      </div>
+      <div class="status" id="status-box" aria-live="polite">
+        <div class="status-icon" id="status-icon">↗</div>
+        <p><strong id="status-title">Ready to group the cards</strong><span id="status-detail">Build a grouping, then press Next or Play.</span></p>
+      </div>
+
+      <div class="viz-grid">
+        <article class="viz-card">
+          <h3>Min-heap · available values</h3>
+          <p class="subtle">The smallest available card starts a new group or extends the current one.</p>
+          <div class="items" id="heap-view"></div>
+        </article>
+        <article class="viz-card">
+          <h3>Queue · leftover copies</h3>
+          <p class="subtle">Used values with remaining copies wait here until the next group starts.</p>
+          <div class="items" id="queue-view"></div>
+        </article>
+      </div>
+
+      <article class="viz-card" style="margin-top:14px">
+        <div class="section-heading">
+          <h3>Groups being built</h3>
+          <span class="step-count" id="result-badge">Result: —</span>
+        </div>
+        <div class="groups" id="groups-view"></div>
+      </article>
+
+      <div class="formula">
+        <div><b>Start a group</b><span>Move queued leftovers back to the heap, then take its smallest value.</span></div>
+        <div><b>Continue a group</b><span>The next smallest available value must equal <code>previous + 1</code>.</span></div>
+        <div><b>Keep extra copies</b><span>After using one copy, queue any remaining copies for a later group.</span></div>
+      </div>
+    </section>
+
+    <section class="panel notes" aria-label="Algorithm notes">
+      <div>
+        <h3>How the code works</h3>
+        <ul>
+          <li>If the hand size is not divisible by the group size, it returns <code>False</code> immediately.</li>
+          <li>A min-heap of <code>(card value, frequency)</code> pairs always gives the smallest unused value.</li>
+          <li>Each group begins at the current minimum, then takes consecutive values.</li>
+          <li>Extra copies are held aside so one group cannot use the same value twice.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Why holding copies aside works</h3>
+        <p>Within a group, card values must strictly increase by one. A value used in the current group cannot be selected again right away; its remaining copies can only start or extend a later group.</p>
+        <span class="complexity">Time: O(N log U) · Space: O(U)</span>
+        <p style="margin-top:7px"><small>N = number of cards; U = number of distinct values.</small></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const handInput = document.getElementById("hand-input");
+    const groupInput = document.getElementById("group-input");
+    const heapView = document.getElementById("heap-view");
+    const queueView = document.getElementById("queue-view");
+    const groupsView = document.getElementById("groups-view");
+    const statusBox = document.getElementById("status-box");
+    const statusTitle = document.getElementById("status-title");
+    const statusDetail = document.getElementById("status-detail");
+    const statusIcon = document.getElementById("status-icon");
+    const stepBadge = document.getElementById("step-badge");
+    const cardCount = document.getElementById("card-count");
+    const resultBadge = document.getElementById("result-badge");
+    const errorMessage = document.getElementById("error-message");
+    const prevButton = document.getElementById("prev-button");
+    const nextButton = document.getElementById("next-button");
+    const playButton = document.getElementById("play-button");
+
+    let history = [];
+    let currentStep = 0;
+    let timer = null;
+    let expectedGroups = 0;
+
+    function parseHand(text) {
+      const parts = text.split(",").map(value => value.trim());
+      if (parts.some(value => value === "")) return null;
+      const cards = parts.map(Number);
+      if (cards.some(value => !Number.isSafeInteger(value))) return null;
+      return cards;
+    }
+
+    function snapshot(state, title, detail, options = {}) {
+      return {
+        title,
+        detail,
+        heap: state.heap.map(item => ({ ...item })),
+        queue: state.queue.map(item => ({ ...item })),
+        groups: state.groups.map(group => [...group]),
+        currentGroup: [...state.currentGroup],
+        expectedGroups: state.expectedGroups,
+        processed: state.processed,
+        failure: options.failure || null,
+        rejected: options.rejected ?? null,
+        result: options.result ?? null
+      };
+    }
+
+    function simulate(hand, groupSize) {
+      const counts = new Map();
+      for (const card of hand) counts.set(card, (counts.get(card) || 0) + 1);
+      const state = {
+        heap: [...counts.entries()].map(([value, count]) => ({ value, count })),
+        queue: [],
+        groups: [],
+        currentGroup: [],
+        expectedGroups: Math.floor(hand.length / groupSize),
+        processed: 0
+      };
+      const events = [];
+      const sortHeap = () => state.heap.sort((a, b) => a.value - b.value);
+      const emit = (title, detail, options) => events.push(snapshot(state, title, detail, options));
+
+      sortHeap();
+      emit("Initial card frequencies", "The min-heap starts with each distinct value and its frequency.");
+
+      if (hand.length % groupSize !== 0) {
+        emit(
+          "Hand size is not divisible",
+          `${hand.length} cards cannot be split into groups of ${groupSize}; the algorithm returns False before building the heap.`,
+          { failure: true, result: false }
+        );
+        return events;
+      }
+
+      while (state.heap.length || state.queue.length) {
+        const position = state.processed % groupSize;
+        const groupNumber = Math.floor(state.processed / groupSize) + 1;
+
+        if (position === 0) {
+          if (state.queue.length) {
+            const released = state.queue.map(item => item.value);
+            state.heap.push(...state.queue);
+            state.queue = [];
+            sortHeap();
+            emit(
+              `Start group ${groupNumber}: release leftovers`,
+              `Move queued copies (${released.join(", ")}) back into the min-heap before starting the next group.`
+            );
+          }
+
+          if (!state.heap.length) {
+            emit("No card available to start a group", "The hand ended before every required group was formed.", {
+              failure: true,
+              result: false
+            });
+            return events;
+          }
+
+          const first = state.heap.shift();
+          state.currentGroup.push(first.value);
+          if (first.count > 1) state.queue.push({ value: first.value, count: first.count - 1 });
+          state.processed += 1;
+          emit(
+            `Group ${groupNumber}: start with ${first.value}`,
+            `Take the smallest available value, ${first.value}.${first.count > 1 ? ` Queue ${first.count - 1} leftover ${first.count - 1 === 1 ? "copy" : "copies"} for the next group.` : ""}`
+          );
+        } else {
+          const previous = state.currentGroup[state.currentGroup.length - 1];
+          if (!state.heap.length) {
+            emit(
+              `Group ${groupNumber} is incomplete`,
+              `There is no available card to follow ${previous}; the group needs ${previous + 1}.`,
+              { failure: true, result: false }
+            );
+            return events;
+          }
+
+          const next = state.heap.shift();
+          if (next.value !== previous + 1) {
+            emit(
+              `Cannot continue group ${groupNumber}`,
+              `Expected ${previous + 1} after ${previous}, but the smallest available value is ${next.value}.`,
+              { failure: true, rejected: next.value, result: false }
+            );
+            return events;
+          }
+
+          state.currentGroup.push(next.value);
+          if (next.count > 1) state.queue.push({ value: next.value, count: next.count - 1 });
+          state.processed += 1;
+          emit(
+            `Group ${groupNumber}: add ${next.value}`,
+            `The next smallest value is ${previous + 1}, so it extends the consecutive group.${next.count > 1 ? ` Queue ${next.count - 1} leftover ${next.count - 1 === 1 ? "copy" : "copies"} for a later group.` : ""}`
+          );
+        }
+
+        if (state.currentGroup.length === groupSize) {
+          state.groups.push(state.currentGroup);
+          state.currentGroup = [];
+          emit(
+            `Group ${state.groups.length} complete`,
+            `Group ${state.groups.length} contains ${state.groups[state.groups.length - 1].join(", ")}.`
+          );
+        }
+      }
+
+      emit("All cards grouped", `Formed ${state.groups.length} consecutive group${state.groups.length === 1 ? "" : "s"}; the algorithm returns True.`, {
+        result: true
+      });
+      return events;
+    }
+
+    function renderItems(container, items, queue) {
+      container.replaceChildren();
+      if (!items.length) {
+        const empty = document.createElement("span");
+        empty.className = "empty";
+        empty.textContent = queue ? "No copies waiting" : "No values available";
+        container.append(empty);
+        return;
+      }
+      items.forEach((item, index) => {
+        const chip = document.createElement("span");
+        chip.className = queue ? "chip wait" : "chip";
+        const value = document.createElement("span");
+        value.textContent = `${!queue && index === 0 ? "★ " : ""}${item.value}`;
+        const count = document.createElement("small");
+        count.textContent = `× ${item.count}`;
+        chip.append(value, count);
+        container.append(chip);
+      });
+    }
+
+    function renderGroups(state) {
+      groupsView.replaceChildren();
+      const completed = state.groups.length;
+      const needsCurrent = state.currentGroup.length > 0 || (!state.result && !state.failure);
+      const total = Math.max(state.expectedGroups, completed + (needsCurrent ? 1 : 0), 1);
+
+      for (let index = 0; index < total; index += 1) {
+        const box = document.createElement("div");
+        const cards = document.createElement("div");
+        const label = document.createElement("div");
+        box.className = "group";
+        label.className = "group-label";
+        cards.className = "cards";
+
+        let values = [];
+        if (index < completed) {
+          box.classList.add("complete");
+          values = state.groups[index];
+          label.textContent = `Group ${index + 1} · complete`;
+        } else if (index === completed && needsCurrent) {
+          box.classList.add("current");
+          values = state.currentGroup;
+          label.textContent = `Group ${index + 1} · in progress`;
+        } else {
+          label.textContent = `Group ${index + 1} · not started`;
+        }
+
+        values.forEach(value => {
+          const card = document.createElement("span");
+          card.className = "card-value";
+          card.textContent = String(value);
+          cards.append(card);
+        });
+        if (index === completed && state.rejected !== null) {
+          const rejected = document.createElement("span");
+          rejected.className = "card-value rejected";
+          rejected.textContent = String(state.rejected);
+          rejected.title = "Rejected: does not continue the consecutive sequence";
+          cards.append(rejected);
+        }
+        box.append(label, cards);
+        groupsView.append(box);
+      }
+    }
+
+    function render() {
+      const state = history[currentStep];
+      if (!state) return;
+      renderItems(heapView, state.heap, false);
+      renderItems(queueView, state.queue, true);
+      renderGroups(state);
+      statusTitle.textContent = state.title;
+      statusDetail.textContent = state.detail;
+      statusIcon.textContent = state.result === true ? "✓" : state.failure ? "!" : currentStep === 0 ? "↗" : "→";
+      statusBox.classList.toggle("success", state.result === true);
+      statusBox.classList.toggle("failure", Boolean(state.failure));
+      stepBadge.textContent = `Step ${currentStep} of ${history.length - 1}`;
+      cardCount.textContent = `${parseHand(handInput.value)?.length ?? 0} cards`;
+      prevButton.disabled = currentStep === 0;
+      nextButton.disabled = currentStep === history.length - 1;
+      resultBadge.textContent = state.result === true
+        ? "Result: True"
+        : state.result === false
+          ? "Result: False"
+          : "Result: in progress";
+    }
+
+    function stopPlayback() {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+      playButton.textContent = "▶ Play";
+    }
+
+    function createGrouping() {
+      stopPlayback();
+      errorMessage.textContent = "";
+      const hand = parseHand(handInput.value);
+      const groupSize = Number(groupInput.value);
+
+      if (!hand || hand.length === 0) {
+        errorMessage.textContent = "Enter one or more whole-number card values, separated by commas.";
+        return;
+      }
+      if (hand.length > 120) {
+        errorMessage.textContent = "For a readable visualization, use at most 120 cards.";
+        return;
+      }
+      if (!Number.isInteger(groupSize) || groupSize < 1 || groupSize > 100) {
+        errorMessage.textContent = "Group size must be a whole number from 1 to 100.";
+        return;
+      }
+
+      history = simulate(hand, groupSize);
+      expectedGroups = Math.floor(hand.length / groupSize);
+      currentStep = 0;
+      render();
+    }
+
+    document.getElementById("build-button").addEventListener("click", createGrouping);
+    prevButton.addEventListener("click", () => {
+      stopPlayback();
+      currentStep = Math.max(0, currentStep - 1);
+      render();
+    });
+    nextButton.addEventListener("click", () => {
+      currentStep = Math.min(history.length - 1, currentStep + 1);
+      render();
+    });
+    playButton.addEventListener("click", () => {
+      if (timer !== null) {
+        stopPlayback();
+        return;
+      }
+      if (currentStep === history.length - 1) currentStep = 0;
+      playButton.textContent = "Ⅱ Pause";
+      render();
+      timer = setInterval(() => {
+        if (currentStep >= history.length - 1) {
+          stopPlayback();
+          return;
+        }
+        currentStep += 1;
+        render();
+        if (currentStep === history.length - 1) stopPlayback();
+      }, 850);
+    });
+    handInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") createGrouping();
+    });
+    groupInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") createGrouping();
+    });
+    createGrouping();
+  </script>
+</body>
+</html>
